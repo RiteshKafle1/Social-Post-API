@@ -5,7 +5,7 @@ const createPost = async (req, res, next) => {
     const { textStatus, img } = req.body;
     // next step -> take image and save the cloudinary url in db;
     const userId = req.user._id;
-    const user = await postModel.findById(userId);
+    const user = await userModel.findById(userId);
     if (!user) {
       return next({ statusCode: 404, message: "Create Account first." });
     }
