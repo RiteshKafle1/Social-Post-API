@@ -1,20 +1,20 @@
 const userModel = require("../MODELS/user.model");
+
 const followUnfollowUser = async (req, res, next) => {
   try {
     const nextPerson = await userModel.findById(req.params.id);
     const me = await userModel.findById(req.user._id);
-    if (nextPerson === me) {
+    if (!nextPerson || !me) {
+      return next({ statusCode: 404, message: "couldnot found one." });
+    }
+    if (nextPerson._id.toString() === me._id.toString()) {
       return next({
         statusCode: 404,
         message: "Couldnot follow/unfollow self.",
       });
     }
-    if (!nextPerson || !me) {
-      return next({ statusCode: 404, message: "couldnot found one." });
-    }
-    const isFollowing = me.following.find(
-      (u) => u.following.toString() === req.params.id.toString()
-    );
+
+    const isFollowing = me.following.includes(req.params.id);
     if (isFollowing) {
       await userModel.findByIdAndUpdate(req.params.id, {
         $pull: { followers: req.user._id },
