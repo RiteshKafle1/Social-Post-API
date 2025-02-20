@@ -1,5 +1,6 @@
 const postModel = require("../MODELS/post.model");
-const notiModel=require('../MODELS/notification.model')
+const notiModel = require("../MODELS/notification.model");
+const userModel = require("../MODELS/user.model");
 
 const createPost = async (req, res, next) => {
   try {
@@ -74,6 +75,7 @@ const commentOnPost = async (req, res, next) => {
 const likeOnPost = async (req, res, next) => {
   try {
     const post = await postModel.findById(req.params.id);
+    const user = await postModel.findById(req.user._id);
     if (!post) {
       return next({ statusCode: 404, message: "Unable to find the post" });
     }
@@ -82,12 +84,27 @@ const likeOnPost = async (req, res, next) => {
       await postModel.updateOne(req.params.id, {
         $pull: { likes: req.user._id },
       });
+
+      await user.updateOne({
+        $pull: {
+          likedPost: req.params.id,
+        },
+      });
+
       await post.save();
+      await user.save();
+
       return res.status(200).json({ error: false, message: "Unliked ." });
     } else {
       post.likes.push({
         user: req.user._id,
       });
+      await user.updateOne({
+        $push: {
+          likedPost: req.params.id,
+        },
+      });
+
       await post.save();
       const notification = new notiModel({
         from: req.user._id,
