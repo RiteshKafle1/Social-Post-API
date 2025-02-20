@@ -1,4 +1,5 @@
 const userModel = require("../MODELS/user.model");
+const notiModel = require("../MODELS/notification.model");
 
 const followUnfollowUser = async (req, res, next) => {
   try {
@@ -22,8 +23,9 @@ const followUnfollowUser = async (req, res, next) => {
       await userModel.findByIdAndUpdate(req.user._id, {
         $pull: { following: req.params.id },
       });
-      return res.status(200).json({error:false,message:'User unfollowed success'})
-
+      return res
+        .status(200)
+        .json({ error: false, message: "User unfollowed success" });
     } else {
       await userModel.findByIdAndUpdate(req.params.id, {
         $push: { followers: req.user._id },
@@ -31,7 +33,15 @@ const followUnfollowUser = async (req, res, next) => {
       await userModel.findByIdAndUpdate(req.user._id, {
         $push: { following: req.params.id },
       });
-      return res.status(200).json({error:false,message:'User followed success'})
+      const newNotification = new notiModel({
+        from: req.user._id,
+        type: "follow",
+        to: req.params.id,
+      });
+      await newNotification.save();
+      return res
+        .status(200)
+        .json({ error: false, message: "User followed success" });
     }
   } catch (error) {
     console.log("Error in following user");

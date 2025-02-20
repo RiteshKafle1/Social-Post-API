@@ -1,4 +1,5 @@
 const postModel = require("../MODELS/post.model");
+const notiModel=require('../MODELS/notification.model')
 
 const createPost = async (req, res, next) => {
   try {
@@ -76,11 +77,11 @@ const likeOnPost = async (req, res, next) => {
     if (!post) {
       return next({ statusCode: 404, message: "Unable to find the post" });
     }
-    const alreadyLiked = post.likes.findIndex(
-      (l) => l.user.toString() === req.user._id.toString()
-    );
-    if (alreadyLiked !== -1) {
-      post.likes.splice(alreadyLiked,1)
+    const alreadyLiked = post.likes.includes(req.user._id);
+    if (alreadyLiked) {
+      await postModel.updateOne(req.params.id, {
+        $pull: { likes: req.user._id },
+      });
       await post.save();
       return res.status(200).json({ error: false, message: "Unliked ." });
     } else {
@@ -88,7 +89,13 @@ const likeOnPost = async (req, res, next) => {
         user: req.user._id,
       });
       await post.save();
-      return res.status(200).json({ error: false, message: "liked ." });
+      const notification = new notiModel({
+        from: req.user._id,
+        type: "like",
+        to: post.user,
+      });
+      await notification.save();
+      return res.status(200).json({ error: false, message: "liked" });
     }
   } catch (error) {
     console.log("Error in liking post");
